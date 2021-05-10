@@ -1,0 +1,48 @@
+---
+
+- name: Create ISC dhcp server default file
+  template:
+    src: isc-dhcp-server.j2
+    dest: /etc/default/isc-dhcp-server
+    owner: root
+    group: root
+    mode: 0644
+  register: restart_ics
+  tags: dhcp
+
+- name: Create ISC dhcpd.conf config file
+  template:
+    src: dhcpd.conf.j2
+    dest: /etc/dhcp/dhcpd.conf
+    owner: root
+    group: root
+    mode: 0644
+  register: restart_ics
+  tags: dhcp
+
+- name: Create ISC zone config file
+  template:
+    src: isc.zone.conf.j2
+    dest: /etc/dhcp/{{ fwd_domain_name }}.conf
+    owner: root
+    group: root
+    mode: 0644
+  register: restart_ics
+  tags: dhcp
+
+- name: Update ISC dhcpd.conf with zone config
+  lineinfile:
+    path: /etc/dhcp/dhcpd.conf
+    regexp: '^include "/etc/dhcp/{{ fwd_domain_name }}.conf";'
+#    insertafter: '^// Zone file inserts '
+    insertafter: EOF
+    line: 'include "/etc/dhcp/{{ fwd_domain_name }}.conf";'
+    state: present
+  register: restart_ics
+  tags: dhcp
+
+- name: Restart ISC DHCP service
+  service:
+    name: isc-dhcp-server
+    state: restarted
+  tags: dhcp

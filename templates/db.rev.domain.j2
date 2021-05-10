@@ -1,0 +1,14 @@
+$ORIGIN .
+$TTL 86400	; 1 day
+{{ rev_domain_name }}.in-addr.arpa	IN SOA	{{ fwd_domain_name }}. root.{{ fwd_domain_name }}. (
+				2465       ; serial
+				604800     ; refresh (1 week)
+				86400      ; retry (1 day)
+				2419200    ; expire (4 weeks)
+				86400      ; minimum (1 day)
+				)
+			NS	{{ ansible_hostname }}.{{ fwd_domain_name }}.
+$ORIGIN {{ rev_domain_name }}.in-addr.arpa.
+{{ dnsserver_ipaddress.split('.')[3] }}.{{ dnsserver_ipaddress.split('.')[2] }}			PTR	{{ ansible_hostname }}.{{ fwd_domain_name }}.
+$TTL 300	; 5 minutes
+;

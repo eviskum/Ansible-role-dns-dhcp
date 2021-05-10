@@ -1,0 +1,72 @@
+---
+
+- name: Stop BIND service
+  service:
+    name: bind9
+    state: stopped
+  tags: domain
+
+- name: Create DNS forward zone
+  template:
+    src: db.fwd.domain.j2
+    dest: /var/lib/bind/db.{{ fwd_domain_name }}
+    owner: bind
+    group: bind
+    mode: 0640
+  register: restart_bind
+  tags: domain
+
+# - name: Create DNS forward zone db link
+#   file:
+#     src: /etc/bind/db.{{ fwd_domain_name }}
+#     dest: /var/cache/bind/db.{{ fwd_domain_name }}
+#     state: link
+#     owner: bind
+#     group: bind
+#     mode: 0640
+
+- name: Create DNS reverse zone
+  template:
+    src: db.rev.domain.j2
+    dest: /var/lib/bind/db.{{ rev_domain_name }}
+    owner: bind
+    group: bind
+    mode: 0640
+  register: restart_bind
+  tags: domain
+
+# - name: Create DNS reverse zone db link
+#   file:
+#     src: /etc/bind/db.{{ rev_domain_name }}
+#     dest: /var/cache/bind/db.{{ rev_domain_name }}
+#     state: link
+#     owner: bind
+#     group: bind
+#     mode: 0640
+
+- name: Create BIND zone config file
+  template:
+    src: bind.zone.conf.j2
+    dest: /etc/bind/{{ fwd_domain_name }}.conf
+    owner: bind
+    group: bind
+    mode: 0640
+  register: restart_bind
+  tags: domain
+
+- name: Update BIND named.conf.local with zone config
+  lineinfile:
+    path: /etc/bind/named.conf.local
+    regexp: '^include "/etc/bind/{{ fwd_domain_name }}.conf";'
+#    insertafter: '^// Zone file inserts '
+    insertafter: EOF
+    line: 'include "/etc/bind/{{ fwd_domain_name }}.conf";'
+    state: present
+  register: restart_bind
+  tags: domain
+
+- name: Restart BIND service
+  service:
+    name: bind9
+    state: restarted
+  tags: domain

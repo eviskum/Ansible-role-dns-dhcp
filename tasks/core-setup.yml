@@ -1,0 +1,93 @@
+---
+
+- name: Install DHCP and DNS server
+  apt:
+    name:
+    - isc-dhcp-server
+    - bind9
+    - bind9utils
+    - python3-dnspython
+    - python3-pip
+    state: present
+    update_cache: yes
+  tags: core
+
+- name: Check for existing key files
+  find:
+    paths: "{{ ddns_key_path }}"
+    recurse: no
+    patterns: "Kddns*.private"
+    file_type: any
+  register: existing_files
+  tags: core
+
+- name: Generate DNSSEC key
+  command: dnssec-keygen -a HMAC-MD5 -b 128 -K {{ ddns_key_path }} -r /dev/urandom -n USER DDNS_UPDATE
+  when: existing_files.files|length == 0
+  tags: core
+
+- name: Find key files
+  find:
+    paths: "{{ ddns_key_path }}"
+    recurse: no
+    patterns: "Kddns*.private"
+    file_type: any
+  register: key_files
+  tags: core
+
+- name: Extract key value
+  command: >
+         awk '/Key:/ {print $2}' {{ item.path }}
+  register: key_value
+  with_items: "{{ key_files.files }}"
+  tags: core
+
+- name: Set dnskey_value variable
+  set_fact:
+    ddnskey_value: "{{ key_value.results[0].stdout }}"
+  tags: core
+
+- name: Create ddns key file for BIND
+  template:
+    src: ddns.key.j2
+    dest: /etc/bind/ddns.key
+    owner: root
+    group: bind
+    mode: 0640
+  tags: core
+
+- name: Create ddns key file for DHCP
+  template:
+    src: ddns.key.j2
+    dest: /etc/dhcp/ddns.key
+    owner: root
+    group: root
+    mode: 0640
+  tags: core
+
+- name: named.conf.local file for BIND
+  template:
+    src: named.conf.local.j2
+    dest: /etc/bind/named.conf.local
+    owner: root
+    group: bind
+    mode: 0644
+  tags: core
+
+- name: named.conf.options file for BIND
+  template:
+    src: named.conf.options.j2
+    dest: /etc/bind/named.conf.options
+    owner: root
+    group: bind
+    mode: 0644
+  tags: core
+
+- name: resolv.conf file for host
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+    owner: root
+    group: bind
+    mode: 0644
+  tags: core

@@ -1,0 +1,15 @@
+---
+
+domains:
+  - name: "viskum-net.mosevang"
+    ip-net: 10.1.1
+    ip-revnet: 1.1.10
+    sub-net: 10.1.1.0
+    net-mask: 255.255.255.0
+    range-start: 10.1.1.100
+    range-end: 10.1.1.200
+    default-router: 10.1.1.1
+    dns-server: 10.1.1.55
+    host-name:
+    
+

@@ -1,0 +1,27 @@
+---
+
+# - name: Import Letsencrypt vars
+#   include_vars: letsencrypt_vars.yml
+
+- name: Import DNS DHCP vars
+  include_vars: dns-dhcp-vars.yml
+  tags: core, domain, dhcp, dnsrec
+
+- name: Setup core installation
+  include_tasks: core-setup.yml
+  tags: core
+#  when: setup_type == "core"
+
+- name: Setup DNS domain
+  include_tasks: domain.yml
+  tags: domain
+#  when: setup_type == "domain"
+
+- name: Setup DHCP scope
+  include_tasks: dhcp-scope.yml
+  tags: dhcp
+#  when: setup_type == "dhcp"
+
+- name: Register DNS records
+  include_tasks: dns-records.yml
+  tags: dnsrec

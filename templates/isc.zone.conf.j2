@@ -1,0 +1,54 @@
+# ansible generated dhcp zone config
+#
+
+option domain-name "{{ fwd_domain_name }}";
+option domain-name-servers {{ ansible_hostname }}.{{ fwd_domain_name }};
+
+default-lease-time 600;
+max-lease-time 7200;
+
+ddns-updates            on;
+ddns-update-style       interim;
+ignore                  client-updates;
+update-static-leases    on;
+
+authoritative;
+
+log-facility local7;
+option ntp-servers {{ dnsserver_ipaddress }};
+
+ddns-domainname "{{ fwd_domain_name }}.";
+ddns-rev-domainname "in-addr.arpa.";
+
+include "/etc/dhcp/ddns.key";
+
+zone {{ fwd_domain_name }}. {
+  primary 127.0.0.1;
+  key DDNS_UPDATE;
+}
+
+zone {{ rev_domain_name }}.in-addr.arpa. {
+  primary 127.0.0.1;
+  key DDNS_UPDATE;
+}
+
+{% for scope in scopes %}
+subnet {{ scope.dhcp_net }} netmask {{ scope.dhcp_mask }} {
+  range {{ scope.dhcp_range_from }} {{ scope.dhcp_range_to }};
+  option subnet-mask {{ scope.dhcp_mask }};
+  option routers     {{ scope.dhcp_router }};
+  option domain-name-servers {{ dnsserver_ipaddress }};
+
+{% for fixediphost in fixediphosts if fixediphost.scopeno == scope.scopeno %}
+  host {{ fixediphost.hostname }} {
+      hardware ethernet {{ fixediphost.macaddr }};
+      fixed-address {{ fixediphost.ipaddr}};
+      option host-name "{{ fixediphost.hostname}}";
+{% if fixediphost.router is defined %}
+      option routers {{ fixediphost.router }};
+{% endif %}
+  }
+{% endfor %}
+
+}
+{% endfor %}

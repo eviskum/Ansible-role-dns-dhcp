@@ -1,0 +1,19 @@
+//
+// Ansible generated local zone configuration here
+//
+
+include "/etc/bind/ddns.key";
+
+zone "{{ fwd_domain_name }}" {
+     type master;
+     notify no;
+     file "/var/lib/bind/db.{{ fwd_domain_name }}";
+     allow-update { key DDNS_UPDATE; };
+};
+
+zone "{{ rev_domain_name }}.in-addr.arpa" {
+     type master;
+     notify no;
+     file "/var/lib/bind/db.{{ rev_domain_name }}";
+     allow-update { key DDNS_UPDATE; };
+};

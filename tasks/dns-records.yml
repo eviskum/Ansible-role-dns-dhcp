@@ -1,0 +1,36 @@
+---
+
+- name: Find key files
+  find:
+    paths: "{{ ddns_key_path }}"
+    recurse: no
+    patterns: "Kddns*.private"
+    file_type: any
+  register: key_files
+  tags: dnsrec
+
+- name: Extract key value
+  command: >
+          awk '/Key:/ {print $2}' {{ item.path }}
+  register: key_value
+  with_items: "{{ key_files.files }}"
+  tags: dnsrec
+
+- name: Set dnskey_value variable
+  set_fact:
+    ddnskey_value: "{{ key_value.results[0].stdout }}"
+  tags: dnsrec
+
+- name: Add DNS records via nsupdate
+  nsupdate:
+    key_algorithm: HMAC-MD5.SIG-ALG.REG.INT
+    key_name: "DDNS_UPDATE"
+    key_secret: "{{ ddnskey_value }}"
+    server: "127.0.0.1"
+    zone: "{{ item.zone }}"
+    record: "{{ item.name }}"
+    value: "{{ item.value }}"
+    type: "{{ item.dnstype }}"
+    state: "{{ item.state }}"
+  loop: "{{ dnsrecords }}"
+  tags: dnsrec
